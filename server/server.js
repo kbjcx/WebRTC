@@ -188,8 +188,62 @@ function handle_offer(message) {
       console.error("handle offer can't find uid " + uid);
       return;
    }
-
+   if (!room_map.contains(remote_uid)) {
+      console.error("can't find remote uid");
+      return;
+   }
+   let remote_client = room_map.get(remote_uid);
+   let msg = JSON.stringify(message);
+   remote_client.connection.sendText(msg);
 }
+
+function handle_answer(message) {
+   let room_id = message.room_id;
+   let uid = message.uid;
+   let remote_uid = message.remote_uid;
+
+   if (!room_table_map.contains(room_id)) {
+      console.error("handle answer can't find room " + room_id);
+      return;
+   }
+   let room_map = room_table_map.get(room_id);
+   if (!room_map.contains(uid)) {
+      console.error("handle answer can't find uid " + uid);
+      return;
+   }
+   if (!room_map.contains(remote_uid)) {
+      console.error("can't find remote uid");
+      return;
+   }
+   let remote_client = room_map.get(remote_uid);
+   let msg = JSON.stringify(message);
+   remote_client.connection.sendText(msg);
+}
+
+function handle_candidate(message) {
+   let room_id = message.room_id;
+   let uid = message.uid;
+   let remote_uid = message.remote_uid;
+
+   if (!room_table_map.contains(room_id)) {
+      console.error("handle candidate can't find room " + room_id);
+      return;
+   }
+   let room_map = room_table_map.get(room_id);
+   if (!room_map.contains(uid)) {
+      console.error("handle candidate can't find uid " + uid);
+      return;
+   }
+   if (!room_map.contains(remote_uid)) {
+      console.error("can't find remote uid");
+      return;
+   }
+   let remote_client = room_map.get(remote_uid);
+   let msg = JSON.stringify(message);
+   remote_client.connection.sendText(msg);
+}
+
+
 
 // 创建一个连接
 let server = ws.createServer(function (connection) {
