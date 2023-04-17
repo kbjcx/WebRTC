@@ -11,10 +11,15 @@
 <!--<p>通过getUserMedia()获取摄像头视频</p>-->
 
 <h1>LLZ的视频聊天室</h1>
-<div id="app">
-    <video id="local-video" autoplay height="200px" width="200px"></video>
-    <button id="show-video">打开摄像头</button>
-    <button id="turnoff-video">关闭摄像头</button>
+<div id="buttons">
+    <input id="room-id" type="text" placeholder="请输入房间ID" maxlength="40" />
+    <button id="join-btn" type="button">加入</button>
+    <button id="leave-btn" type="button">离开</button>
+</div>
+
+<div id="videos">
+    <video id="local-video" autoplay muted playsinline>本地窗口</video>
+    <video id="remote-video" autoplay playsinline>远程窗口</video>
 </div>
 
 </body>
