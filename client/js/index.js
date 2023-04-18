@@ -47,8 +47,7 @@ function handle_ice_candidate(event) {
         let msg = JSON.stringify(json_msg);
         rtc_engine.send_message(msg);
         console.info("handle ice candidate message: " + msg);
-    }
-    else {
+    } else {
         console.warn("End of candidates");
     }
 }
@@ -58,8 +57,30 @@ function handle_remote_stream_add(event) {
     remote_stream = event.streams[0];
     remote_video.srcObject = remote_stream;
 }
+
 function create_peer_connection() {
-    pc = new RTCPeerConnection(null);
+    let configuration = {
+        bundlePolicy: "max-bundle",
+        rtcpMuxPolicy: "require",
+        iceTransportPolicy: "relay",
+        iceServers: [
+            {
+                "urls": [
+                    "turn:47.92.208.18:3478?transport=udp",
+                    "turn:47.92.208.18:3478?transport=tcp",
+                ],
+                "username": "llz",
+                "credential": "llz123"
+            },
+            {
+                "urls": [
+                    "stun:47.92.208.18:3478"
+                ]
+            }
+        ]
+    };
+
+    pc = new RTCPeerConnection(configuration);
     pc.onicecandidate = handle_ice_candidate;
     pc.ontrack = handle_remote_stream_add;
     local_stream.getTracks().forEach(track => pc.addTrack(track, local_stream));
@@ -199,6 +220,10 @@ function handle_remote_response_join(message) {
 function handle_remote_peer_leave(message) {
     remote_video.srcObject = null;
     alert("对方退出了房间");
+    if (pc != null) {
+        pc.close();
+        pc = null;
+    }
 }
 
 function handle_remote_offer(message) {
@@ -257,6 +282,18 @@ function do_leave(room_id) {
     let msg = JSON.stringify(json_msg);
     rtc_engine.send_message(msg);
     console.info("do leave message: " + msg);
+    hangup();
+}
+
+function hangup() {
+    local_video.srcObject = null;
+    remote_video.srcObject = null;
+    remote_stream = null;
+    close_local_stream();
+    if (pc != null) {
+        pc.close();
+        pc = null;
+    }
 }
 
 function open_local_stream(stream) {
@@ -265,13 +302,23 @@ function open_local_stream(stream) {
     local_stream = stream;
     local_video.srcObject = stream;
 }
+
+function close_local_stream() {
+    console.log("close local stream");
+    if (local_stream != null) {
+        local_stream.getTracks().forEach(track => {
+            track.stop();
+        });
+    }
+}
+
 function init_local_stream() {
     navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true
     }).then(open_local_stream).catch(function (e) {
-       alert("本地视频获取失败");
-       console.log("error" + e.name);
+        alert("本地视频获取失败");
+        console.log("error" + e.name);
     });
 }
 

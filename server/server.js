@@ -144,6 +144,8 @@ function handle_join(connection, message) {
          }
       }
    }
+
+   return client;
 }
 
 function handle_leave(message) {
@@ -248,6 +250,7 @@ function handle_candidate(message) {
 // 创建一个连接
 let server = ws.createServer(function (connection) {
    console.log("创建一个新的连接----");
+   connection.client = null; // 保存客户端信息
    // 向客户端推送消息
     connection.on("text", function (str) {
        console.info("receive msg: " + str);
@@ -255,7 +258,7 @@ let server = ws.createServer(function (connection) {
 
        switch (json_msg.cmd) {
           case SIGNAL_TYPE_JOIN:
-             handle_join(connection, json_msg);
+             connection.client = handle_join(connection, json_msg);
              break;
           case SIGNAL_TYPE_LEAVE:
              handle_leave(json_msg);
@@ -275,6 +278,10 @@ let server = ws.createServer(function (connection) {
     // 监听关闭连接的操作
    connection.on("close", function (code, reason) {
       console.info("连接关闭 code: " +code + ", reason" +reason);
+      if (connection.client != null) {
+         // 退出房间
+         handle_force_leave(connection.client);
+      }
    });
 
    // 错误处理
@@ -283,3 +290,36 @@ let server = ws.createServer(function (connection) {
       console.log(error);
    });
 }).listen(port);
+
+function handle_force_leave(client) {
+   let room_id = client.room_id;
+   let uid = client.uid;
+
+   console.info("uid: " + uid + "force leave room " + room_id);
+   if (!room_table_map.contains(room_id)) {
+      console.error("无法找到房间");
+      return;
+   }
+   let room_map = room_table_map.get(room_id);
+
+   if (!room_map.contains(uid)) {
+      return;
+   }
+
+   room_map.remove(uid); // 删除发送者
+   // 将消息发送给其他人
+   if (room_map.size() > 0) {
+      let clients = room_map.get_entrys();
+      for (let i in clients) {
+         let json_msg = {
+            "cmd": SIGNAL_TYPE_PEER_LEAVE,
+            "remote_uid": uid
+         };
+         let msg = JSON.stringify(json_msg);
+         let remote_uid = clients[i].key;
+         let remote_client = room_map.get(remote_uid);
+         console.info("notify peer " + remote_uid + ", uid: " + uid + "force leave");
+         remote_client.connection.sendText(msg);
+      }
+   }
+}
